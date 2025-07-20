@@ -1,0 +1,32 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+  <title>ToDoList Widget</title>
+  <link rel="stylesheet" href="css/style.css" />
+</head>
+<body>
+  <div id="widget">
+    <div id="header">
+      <div id="list-selector">
+        <button id="current-list">Loading...</button>
+        <ul id="list-dropdown" class="hidden"></ul>
+      </div>
+      <div id="window-buttons">
+        <button id="minbtn" aria-label="Minimize">−</button>
+        <button id="closebtn" aria-label="Close">✕</button>
+      </div>
+    </div>
+
+    <ul id="todo-list"></ul>
+
+    <div id="input-section">
+      <input type="text" id="new-task" placeholder="New task..." autocomplete="off" />
+      <button id="add-task">➕</button>
+    </div>
+  </div>
+
+  <script src="../js/renderer.js"></script>
+</body>
+</html>

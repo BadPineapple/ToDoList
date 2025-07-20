@@ -1,0 +1,33 @@
+# Node.js
+node_modules/
+npm-debug.log*
+yarn-debug.log*
+yarn-error.log*
+dist/
+*.tgz
+
+# Electron build output
+out/
+build/
+release/
+*.exe
+*.dmg
+*.app
+*.asar
+
+# SQLite database
+todo.db
+initprojeto.txt
+
+# Environment files
+.env
+.env.local
+
+# VSCode configs (opcional)
+.vscode/
+
+# macOS
+.DS_Store
+
+# Windows
+Thumbs.db
