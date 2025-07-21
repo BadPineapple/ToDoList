@@ -49,28 +49,34 @@ function updateListSelector() {
       updateListSelector();
       loadTasks();
     };
+
+    // Abre edição ao clicar com o botão direito
+    li.oncontextmenu = (e) => {
+      e.preventDefault();
+      console.log('[updateListSelector] Open edit');
+      ipcRenderer.invoke('openListModal', listItem.IDLISTA);
+    };
+
+    // Também permite editar com duplo clique
+    li.ondblclick = () => {
+      console.log('[updateListSelector] Open edit');
+      ipcRenderer.invoke('openListModal', listItem.IDLISTA);
+    };
+
     listDropdown.appendChild(li);
   });
 
   const newListOption = document.createElement('li');
   newListOption.textContent = '➕ New List';
-  newListOption.onclick = () => {
-    const name = prompt('New list name:');
-    if (name) {
-      console.log('[newListOption] Requesting new list:', name);
-      ipcRenderer.invoke('addList', {
-        nome: name,
-        descricao: '',
-        oculto: false
-      }).then(() => {
-        loadLists();
-      });
-    }
+  newListOption.onclick = async () => {
+    console.log('[newListOption] Opening modal to create new list');
+    ipcRenderer.invoke('openListModal');
   };
   listDropdown.appendChild(newListOption);
 }
 
-currentListBtn.onclick = () => {
+currentListBtn.onclick = (e) => {
+  e.stopPropagation();
   listDropdown.classList.toggle('hidden');
   console.log('[currentListBtn] Toggled list dropdown');
 };
@@ -120,6 +126,18 @@ addTaskBtn.onclick = () => {
   }
 };
 
+ipcRenderer.on('lists-updated', async () => {
+  await loadLists(); // Recarrega do banco
+  updateListSelector(); // Atualiza visualmente o dropdown
+});
+
+document.addEventListener('click', (e) => {
+  const isClickInside = currentListBtn.contains(e.target) || listDropdown.contains(e.target);
+  if (!isClickInside) {
+    listDropdown.classList.add('hidden');
+  }
+});
+
 document.getElementById("closebtn").onclick = () => {
   console.log('[UI] Closing app');
   ipcRenderer.send("quit-app");
@@ -129,5 +147,22 @@ document.getElementById("minbtn").onclick = () => {
   console.log('[UI] Minimizing app');
   ipcRenderer.send("minimize-app");
 };
+
+document.addEventListener('keydown', (e) => {
+  if (e.key === 'Delete' && !listDropdown.classList.contains('hidden')) {
+    if (!selectedList) return;
+
+    const confirmDelete = confirm(`Delete list "${selectedList.NOME}"?\nThis will also delete its tasks.`);
+    if (!confirmDelete) return;
+
+    console.log('[KeyDelete] Deleting selected list:', selectedList);
+
+    ipcRenderer.invoke('deleteList', selectedList.IDLISTA).then(() => {
+      loadLists();
+    });
+  }
+});
+
+
 
 loadLists(); // start loading lists on init

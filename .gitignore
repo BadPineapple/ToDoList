@@ -18,6 +18,7 @@ release/
 # SQLite database
 todo.db
 initprojeto.txt
+Ajustes.txt
 
 # Environment files
 .env

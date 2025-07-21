@@ -182,10 +182,103 @@ function getNextTaskListId() {
   });
 }
 
+function deleteList(listId) {
+  return new Promise((resolve, reject) => {
+    db.serialize(() => {
+      // 1. Buscar tarefas da lista
+      db.all(`SELECT IDTAREFA FROM tbltarefaslistas WHERE IDLISTA = ?`, [listId], (err, rows) => {
+        if (err) return reject(err);
+
+        const taskIds = rows.map(r => r.IDTAREFA);
+        const tasksToDelete = [];
+
+        let pendingChecks = taskIds.length;
+
+        if (pendingChecks === 0) {
+          return proceedWithDeletion(); // nenhuma tarefa, pode continuar
+        }
+
+        // 2. Verificar para cada tarefa se está em outras listas
+        taskIds.forEach(taskId => {
+          db.get(
+            `SELECT COUNT(*) as count FROM tbltarefaslistas WHERE IDTAREFA = ? AND IDLISTA != ?`,
+            [taskId, listId],
+            (err2, result) => {
+              if (err2) return reject(err2);
+
+              if (result.count === 0) {
+                tasksToDelete.push(taskId);
+              }
+
+              pendingChecks--;
+              if (pendingChecks === 0) {
+                proceedWithDeletion();
+              }
+            }
+          );
+        });
+
+        function proceedWithDeletion() {
+          // 3. Excluir tarefas exclusivas
+          tasksToDelete.forEach(taskId => {
+            db.run(`DELETE FROM tbltarefas WHERE IDTAREFA = ?`, [taskId]);
+          });
+
+          // 4. Excluir vínculos
+          db.run(`DELETE FROM tbltarefaslistas WHERE IDLISTA = ?`, [listId]);
+
+          // 5. Excluir a lista
+          db.run(`DELETE FROM tbllistas WHERE IDLISTA = ?`, [listId], (err3) => {
+            if (err3) return reject(err3);
+            resolve(true);
+          });
+        }
+      });
+    });
+  });
+}
+
+function deleteTask(taskId) {
+  return new Promise((resolve, reject) => {
+    db.serialize(() => {
+      db.run(`DELETE FROM tbltarefaslistas WHERE IDTAREFA = ?`, [taskId], function (err) {
+        if (err) return reject(err);
+        db.run(`DELETE FROM tbltarefas WHERE IDTAREFA = ?`, [taskId], function (err2) {
+          if (err2) reject(err2);
+          else resolve(true);
+        });
+      });
+    });
+  });
+}
+
+function getListById(id) {
+  return new Promise((resolve, reject) => {
+    db.get(`SELECT * FROM tbllistas WHERE IDLISTA = ?`, [id], (err, row) => {
+      if (err) reject(err);
+      else resolve(row);
+    });
+  });
+}
+
+function updateList(list) {
+  return new Promise((resolve, reject) => {
+    const stmt = `UPDATE tbllistas SET NOME = ?, DESCRICAO = ?, OCULTO = ? WHERE IDLISTA = ?`;
+    db.run(stmt, [list.nome, list.descricao, list.oculto ? 1 : 0, list.IDLISTA], function (err) {
+      if (err) reject(err);
+      else resolve();
+    });
+  });
+}
+
 module.exports = {
   addList,
   getAllLists,
   addTask,
+  getListById,
   matchListXTask,
-  getTasksByList
+  getTasksByList,
+  deleteTask,
+  deleteList,
+  updateList
 };
